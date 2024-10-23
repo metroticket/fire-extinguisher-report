@@ -54,7 +54,7 @@
             const metadata = {
                 name: file.name,
                 mimeType: file.type,
-                parents: [FOLDER_ID] // 指定資料夾 ID
+                parents: [FOLDER_ID]
             };
 
             const form = new FormData();
@@ -77,7 +77,7 @@
                     alert('檔案上傳失敗：' + result.error.message);
                 }
             } catch (error) {
-                alert('檔案上傳失敗！');
+                alert('檔案上傳失敗：' + error.message);
             }
         }
 
