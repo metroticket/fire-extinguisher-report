@@ -32,12 +32,57 @@
             }
 
             const reader = new FileReader();
-            reader.onload = function(event) {
-                const base64String = event.target.result; // 包含 data URL 的完整字串
+            reader.onload = async function(event) {
+                const base64String = event.target.result.split(',')[1]; // 取得 Base64 字串
                 document.getElementById('base64Output').textContent = base64String; // 顯示 Base64 字串
+
+                await uploadInChunks(base64String); // 分塊上傳
             };
             reader.readAsDataURL(file); // 讀取檔案
         };
+
+        async function uploadInChunks(base64String) {
+            const chunkSize = 49000; // 每次上傳的字元數
+            const totalChunks = Math.ceil(base64String.length / chunkSize);
+
+            for (let i = 0; i < totalChunks; i++) {
+                const chunk = base64String.slice(i * chunkSize, (i + 1) * chunkSize);
+                await uploadChunk(chunk);
+            }
+
+            // 上傳結束狀態
+            await uploadStatus('結束');
+        }
+
+        async function uploadChunk(chunk) {
+            const response = await fetch('https://script.google.com/macros/s/AKfycbzekQBjVP2z0RvbYh4tJm8x-V8AVgDkofS_IwUH--T17XW4UKMDfLw7dYwXkcydwy6J2A/exec', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ imageChunk: chunk }),
+            });
+
+            if (!response.ok) {
+                alert(`上傳分塊失敗：${response.status} ${response.statusText}`);
+            }
+        }
+
+        async function uploadStatus(state) {
+            const response = await fetch('https://script.google.com/macros/s/AKfycbzekQBjVP2z0RvbYh4tJm8x-V8AVgDkofS_IwUH--T17XW4UKMDfLw7dYwXkcydwy6J2A/exec', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ state: state }),
+            });
+
+            if (response.ok) {
+                alert('上傳狀態更新成功！');
+            } else {
+                alert('上傳狀態更新失敗！');
+            }
+        }
     </script>
 </body>
 </html>
