@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>圖片上傳系統</title>
-    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <h1>上傳圖片</h1>
@@ -13,7 +13,7 @@
 
     <script>
         const CLIENT_ID = '311942987660-m6hvj64fo17l216jfehahgfrka3cjlk9.apps.googleusercontent.com'; // 替換為你的 CLIENT_ID
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzekQBjVP2z0RvbYh4tJm8x-V8AVgDkofS_IwUH--T17XW4UKMDfLw7dYwXkcydwy6J2A/exec'; // 使用您的 Script ID
 
         document.getElementById('uploadBtn').onclick = async function() {
             const fileInput = document.getElementById('fileInput');
@@ -23,35 +23,16 @@
                 return;
             }
 
-            // 獲取 OAuth 令牌
-            await handleClientLoad();
-
-            const reader = new FileReader();
-            reader.onload = async function(event) {
-                const base64String = event.target.result.split(',')[1]; // 取得 Base64 字串
-                await uploadInChunks(base64String);
-            };
-            reader.readAsDataURL(file); // 讀取檔案
+            const base64String = await getBase64(file);
+            await uploadInChunks(base64String);
         };
 
-        async function handleClientLoad() {
-            return new Promise((resolve) => {
-                gapi.load('client:auth2', () => {
-                    gapi.client.init({
-                        clientId: CLIENT_ID,
-                        scope: SCOPES,
-                    }).then(() => {
-                        // 觸發授權流程
-                        const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-                        if (!isSignedIn) {
-                            gapi.auth2.getAuthInstance().signIn().then(() => {
-                                resolve();
-                            });
-                        } else {
-                            resolve();
-                        }
-                    });
-                });
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]); // 取得 Base64 字串
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
             });
         }
 
@@ -69,10 +50,11 @@
         }
 
         async function uploadChunk(chunk) {
-            const response = await fetch('https://script.google.com/macros/s/AKfycbzekQBjVP2z0RvbYh4tJm8x-V8AVgDkofS_IwUH--T17XW4UKMDfLw7dYwXkcydwy6J2A/exec', {
+            const token = await getOAuthToken();
+            const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + gapi.auth.getToken().access_token,
+                    'Authorization': 'Bearer ' + token,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ imageChunk: chunk }),
@@ -84,10 +66,11 @@
         }
 
         async function uploadStatus(state) {
-            const response = await fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec', {
+            const token = await getOAuthToken();
+            const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + gapi.auth.getToken().access_token,
+                    'Authorization': 'Bearer ' + token,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ state: state }),
@@ -98,6 +81,24 @@
             } else {
                 alert('上傳狀態更新失敗！');
             }
+        }
+
+        async function getOAuthToken() {
+            return new Promise((resolve, reject) => {
+                window.google.accounts.id.initialize({
+                    client_id: CLIENT_ID,
+                    callback: handleCredentialResponse
+                });
+                window.google.accounts.id.prompt(); // 彈出授權窗口
+
+                function handleCredentialResponse(response) {
+                    if (response.credential) {
+                        resolve(response.credential);
+                    } else {
+                        reject('無法獲取 OAuth 令牌');
+                    }
+                }
+            });
         }
     </script>
 </body>
