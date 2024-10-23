@@ -4,40 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>滅火器上傳資料系統</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
     <h1>滅火器上傳資料系統</h1>
-    <input type="file" id="fileInput" accept="image/*">
+    <input type="file" id="fileInput" accept="image/*"> <!-- 限制為圖片檔案 -->
     <button id="uploadBtn">送出</button>
 
     <script>
-        const CLIENT_ID = '311942987660-m6hvj64fo17l216jfehahgfrka3cjlk9.apps.googleusercontent.com';
-        const FOLDER_ID = '1IqrZTHe80ehLlsyrIOhxUM8hhs6UOaNh';
+        let CLIENT_ID = '311942987660-m6hvj64fo17l216jfehahgfrka3cjlk9.apps.googleusercontent.com';
+        let FOLDER_ID = '1IqrZTHe80ehLlsyrIOhxUM8hhs6UOaNh'; // 指定資料夾 ID
+        const API_KEY = 'AIzaSyDrlj_3nF4PMa46u69wa2Rg5YLTJwGAMnE'; // 請填入你的 API 金鑰
 
-        function handleAuthClick() {
-            const tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: 'https://www.googleapis.com/auth/drive.file',
-                callback: (response) => {
-                    if (response.error) {
-                        console.error('Error getting access token:', response.error);
-                        return;
-                    }
-                    uploadFile(response.access_token);
-                }
-            });
-
-            tokenClient.requestAccessToken();
+        function handleClientLoad() {
+            gapi.load('client:auth2', initClient);
         }
 
-        document.getElementById('uploadBtn').onclick = handleAuthClick;
+        async function initClient() {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                clientId: CLIENT_ID,
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                scope: 'https://www.googleapis.com/auth/drive.file',
+            });
+        }
 
-        async function uploadFile(accessToken) {
+        document.getElementById('uploadBtn').onclick = async function() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
             if (!file) {
                 alert('請選擇檔案');
+                return;
+            }
+
+            const accessToken = gapi.auth.getToken() ? gapi.auth.getToken().access_token : null;
+            if (!accessToken) {
+                alert('請先授權');
                 return;
             }
 
@@ -68,7 +70,9 @@
                 console.error('Error uploading file: ', error);
                 alert('檔案上傳失敗！');
             }
-        }
+        };
+
+        handleClientLoad();
     </script>
 </body>
 </html>
