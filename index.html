@@ -3,61 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>票務中心機器人系統</title>
-    <script src="https://apis.google.com/js/api.js"></script>
+    <title>滅火器上傳資料系統</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <h1>滅火器上傳資料系統</h1>
-    <input type="file" id="fileInput" accept="image/*"> <!-- 限制為圖片檔案 -->
+    <input type="file" id="fileInput" accept="image/*">
     <button id="uploadBtn">送出</button>
 
     <script>
         let CLIENT_ID = '311942987660-m6hvj64fo17l216jfehahgfrka3cjlk9.apps.googleusercontent.com';
-        let API_KEY = 'AIzaSyDrlj_3nF4PMa46u69wa2Rg5YLTJwGAMnE';
-        let FOLDER_ID = '1IqrZTHe80ehLlsyrIOhxUM8hhs6UOaNh'; // 指定資料夾 ID
-        let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-        let SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        let FOLDER_ID = '1IqrZTHe80ehLlsyrIOhxUM8hhs6UOaNh';
 
-        function handleClientLoad() {
-            gapi.load('client:auth2', initClient);
-        }
-
-        async function initClient() {
-            await gapi.client.init({
-                apiKey: API_KEY,
-                clientId: CLIENT_ID,
-                discoveryDocs: DISCOVERY_DOCS,
-                scope: SCOPES
+        async function handleAuth() {
+            const response = await google.accounts.oauth2.initCodeClient({
+                client_id: CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/drive.file',
+                ux_mode: 'popup',
+                callback: (response) => {
+                    // 當獲取到 token 時，開始上傳檔案
+                    if (response.code) {
+                        uploadFile(response.code);
+                    }
+                }
             });
 
-            const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-            if (!isSignedIn) {
-                await gapi.auth2.getAuthInstance().signIn(); // 請求用戶登入
-            }
+            response.requestAccessToken();
         }
 
-        document.getElementById('uploadBtn').onclick = async function() {
-            const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-            if (!isSignedIn) {
-                alert('請先登入 Google 帳號');
-                return;
-            }
-            
+        document.getElementById('uploadBtn').onclick = handleAuth;
+
+        async function uploadFile(accessToken) {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
             if (!file) {
                 alert('請選擇檔案');
                 return;
             }
-            
-            try {
-                const accessToken = gapi.auth.getToken().access_token;
 
-                // 構建檔案元數據，包括資料夾 ID
+            try {
                 const metadata = {
                     name: file.name,
                     mimeType: file.type,
-                    parents: [FOLDER_ID] // 指定資料夾 ID
+                    parents: [FOLDER_ID]
                 };
 
                 const form = new FormData();
@@ -81,8 +69,6 @@
                 alert('檔案上傳失敗！');
             }
         }
-
-        handleClientLoad();
     </script>
 </body>
 </html>
