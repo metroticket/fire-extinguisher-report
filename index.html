@@ -40,35 +40,44 @@
             await uploadStatus('結束');
         }
 
-        async function uploadChunk(chunk) {
-            const response = await fetch('https://script.google.com/macros/s/AKfycbzekQBjVP2z0RvbYh4tJm8x-V8AVgDkofS_IwUH--T17XW4UKMDfLw7dYwXkcydwy6J2A/exec', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ imageChunk: chunk }),
-            });
+async function uploadChunk(chunk) {
+    try {
+        const response = await fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ imageChunk: chunk }),
+        });
 
-            if (!response.ok) {
-                alert('檔案分塊上傳失敗！');
-            }
+        if (!response.ok) {
+            throw new Error(`上傳分塊失敗：${response.status} ${response.statusText}`);
         }
+    } catch (error) {
+        console.error('Error uploading chunk:', error);
+        alert('檔案分塊上傳失敗！');
+    }
+}
 
-        async function uploadStatus(state) {
-            const response = await fetch('https://script.google.com/macros/s/AKfycbzekQBjVP2z0RvbYh4tJm8x-V8AVgDkofS_IwUH--T17XW4UKMDfLw7dYwXkcydwy6J2A/exec', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ state: state }),
-            });
+async function uploadStatus(state) {
+    try {
+        const response = await fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ state: state }),
+        });
 
-            if (response.ok) {
-                alert('上傳狀態更新成功！');
-            } else {
-                alert('上傳狀態更新失敗！');
-            }
+        if (!response.ok) {
+            throw new Error(`狀態更新失敗：${response.status} ${response.statusText}`);
         }
+        alert('上傳狀態更新成功！');
+    } catch (error) {
+        console.error('Error updating status:', error);
+        alert('上傳狀態更新失敗！');
+    }
+}
     </script>
 </body>
 </html>
