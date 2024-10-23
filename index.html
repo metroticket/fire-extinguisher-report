@@ -12,26 +12,26 @@
     <button id="uploadBtn">送出</button>
 
     <script>
-        let CLIENT_ID = '311942987660-m6hvj64fo17l216jfehahgfrka3cjlk9.apps.googleusercontent.com';
-        let FOLDER_ID = '1IqrZTHe80ehLlsyrIOhxUM8hhs6UOaNh';
+        const CLIENT_ID = '311942987660-m6hvj64fo17l216jfehahgfrka3cjlk9.apps.googleusercontent.com';
+        const FOLDER_ID = '1IqrZTHe80ehLlsyrIOhxUM8hhs6UOaNh';
 
-        async function handleAuth() {
-            const response = await google.accounts.oauth2.initCodeClient({
+        function handleAuthClick() {
+            const tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: 'https://www.googleapis.com/auth/drive.file',
-                ux_mode: 'popup',
                 callback: (response) => {
-                    // 當獲取到 token 時，開始上傳檔案
-                    if (response.code) {
-                        uploadFile(response.code);
+                    if (response.error) {
+                        console.error('Error getting access token:', response.error);
+                        return;
                     }
+                    uploadFile(response.access_token);
                 }
             });
 
-            response.requestAccessToken();
+            tokenClient.requestAccessToken();
         }
 
-        document.getElementById('uploadBtn').onclick = handleAuth;
+        document.getElementById('uploadBtn').onclick = handleAuthClick;
 
         async function uploadFile(accessToken) {
             const fileInput = document.getElementById('fileInput');
